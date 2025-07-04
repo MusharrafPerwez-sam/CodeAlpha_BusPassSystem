@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: bus-pass-system
+    env: python
+    buildCommand: ""
+    startCommand: gunicorn app:app
+    envVars:
+      - key: DB_HOST
+        value: your-db-host
+      - key: DB_NAME
+        value: your-db-name
+      - key: DB_USER
+        value: your-username
+      - key: DB_PASSWORD
+        value: your-password
+      - key: DB_PORT
+        value: 5432

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bus Ticket Booking</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; }
+        form { max-width: 400px; }
+        input, label { display: block; width: 100%; margin-bottom: 15px; }
+        input[type="submit"] {
+            background-color: green;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+        }
+        a { color: blue; text-decoration: none; }
+        .message { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>Book Your Ticket</h2>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="message">{{ messages[0] }}</div>
+      {% endif %}
+    {% endwith %}
+    <form method="POST" action="/book">
+        <label>Name:</label>
+        <input type="text" name="name" required>
+
+        <label>Email:</label>
+        <input type="email" name="email" required>
+
+        <label>Travel Date:</label>
+        <input type="date" name="travel_date" required>
+
+        <label>Seat Number:</label>
+        <input type="text" name="seat" required>
+
+        <input type="submit" value="Book Ticket">
+    </form>
+    <br>
+    <a href="/bookings">View All Bookings</a>
+</body>
+</html>
