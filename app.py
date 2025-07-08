@@ -3,7 +3,7 @@ import psycopg2
 from flask import Flask, render_template, request, redirect, flash
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key'
+app.secret_key = os.environ.get('SECRET_KEY', 'default-secret-key')
 
 def get_db_connection():
     conn = psycopg2.connect(
@@ -35,7 +35,6 @@ def book():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Create table if not exists
     cur.execute('''
         CREATE TABLE IF NOT EXISTS bookings (
             id SERIAL PRIMARY KEY,
@@ -47,14 +46,12 @@ def book():
         )
     ''')
 
-    # Check if seat already booked
     cur.execute('SELECT * FROM bookings WHERE travel_date = %s AND seat = %s', (travel_date, seat))
     if cur.fetchone():
         conn.close()
         flash(f"Seat {seat} is already booked for {travel_date}.")
         return redirect('/')
 
-    # Insert booking
     cur.execute('INSERT INTO bookings (name, email, travel_date, seat, price) VALUES (%s, %s, %s, %s, %s)',
                 (name, email, travel_date, seat, price))
     conn.commit()
@@ -72,5 +69,5 @@ def bookings():
     conn.close()
     return render_template('bookings.html', bookings=all_data)
 
-if __name__ == '_main_':
-    app.run(debug=True)
+if __name__ == "_main_":
+    app.run(host='0.0.0.0')
