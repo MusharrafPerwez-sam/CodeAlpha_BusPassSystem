@@ -1,73 +1,131 @@
-import os
-import psycopg2
-from flask import Flask, render_template, request, redirect, flash
+from flask import Flask, render_template_string, request, redirect, url_for
+import sqlite3
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'default-secret-key')
 
+# HTML template (simple inline version for demonstration)
+form_html = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bus Ticket Booking</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; }
+        form { max-width: 400px; }
+        input, label { display: block; width: 100%; margin-bottom: 15px; }
+        input[type="submit"] {
+            background-color: green;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+        }
+        a { color: blue; text-decoration: none; }
+        .message { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>Book Your Ticket</h2>
+    {% if message %}
+        <p class="message">{{ message }}</p>
+    {% endif %}
+    <form method="POST" action="/book">
+        <label>Name:</label>
+        <input type="text" name="name" required>
+
+        <label>Email:</label>
+        <input type="email" name="email" required>
+
+        <label>Travel Date:</label>
+        <input type="date" name="travel_date" required>
+
+        <label>Seat Number:</label>
+        <input type="text" name="seat" required>
+
+        <input type="submit" value="Book Ticket">
+    </form>
+    <br>
+    <a href="/bookings">View All Bookings</a>
+</body>
+</html>
+"""
+
+bookings_html = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>All Bookings</title>
+</head>
+<body>
+    <h2>All Bookings</h2>
+    <table border="1" cellpadding="10">
+        <tr><th>Name</th><th>Email</th><th>Travel Date</th><th>Seat</th></tr>
+        {% for booking in bookings %}
+            <tr>
+                <td>{{ booking['name'] }}</td>
+                <td>{{ booking['email'] }}</td>
+                <td>{{ booking['travel_date'] }}</td>
+                <td>{{ booking['seat'] }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+    <br>
+    <a href="/">Back to Booking</a>
+</body>
+</html>
+"""
+
+# SQLite connection
 def get_db_connection():
-    conn = psycopg2.connect(
-        host=os.environ.get('DB_HOST'),
-        database=os.environ.get('DB_NAME'),
-        user=os.environ.get('DB_USER'),
-        password=os.environ.get('DB_PASSWORD'),
-        port=os.environ.get('DB_PORT', 5432)
-    )
+    conn = sqlite3.connect('tickets.db')
+    conn.row_factory = sqlite3.Row
     return conn
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/book', methods=['POST'])
-def book():
-    name = request.form.get('name')
-    email = request.form.get('email')
-    travel_date = request.form.get('travel_date')
-    seat = request.form.get('seat')
-
-    if not all([name, email, travel_date, seat]):
-        flash("All fields are required.")
-        return redirect('/')
-
-    price = 100.0  # Fixed price
-
+# Create the table on first run
+def init_db():
     conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute('''
+    conn.execute('''
         CREATE TABLE IF NOT EXISTS bookings (
-            id SERIAL PRIMARY KEY,
-            name TEXT,
-            email TEXT,
-            travel_date TEXT,
-            seat TEXT,
-            price REAL
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            travel_date TEXT NOT NULL,
+            seat TEXT NOT NULL
         )
     ''')
-
-    cur.execute('SELECT * FROM bookings WHERE travel_date = %s AND seat = %s', (travel_date, seat))
-    if cur.fetchone():
-        conn.close()
-        flash(f"Seat {seat} is already booked for {travel_date}.")
-        return redirect('/')
-
-    cur.execute('INSERT INTO bookings (name, email, travel_date, seat, price) VALUES (%s, %s, %s, %s, %s)',
-                (name, email, travel_date, seat, price))
     conn.commit()
     conn.close()
 
-    flash("Ticket booked successfully!")
-    return redirect('/bookings')
+init_db()
 
+# Home page
+@app.route('/')
+def home():
+    return render_template_string(form_html)
+
+# Booking handler
+@app.route('/book', methods=['POST'])
+def book():
+    name = request.form['name']
+    email = request.form['email']
+    travel_date = request.form['travel_date']
+    seat = request.form['seat']
+
+    conn = get_db_connection()
+    conn.execute('INSERT INTO bookings (name, email, travel_date, seat) VALUES (?, ?, ?, ?)',
+                 (name, email, travel_date, seat))
+    conn.commit()
+    conn.close()
+
+    return render_template_string(form_html, message="Ticket booked successfully!")
+
+# View all bookings
 @app.route('/bookings')
 def bookings():
     conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('SELECT * FROM bookings ORDER BY id DESC')
-    all_data = cur.fetchall()
+    bookings = conn.execute('SELECT * FROM bookings').fetchall()
     conn.close()
-    return render_template('bookings.html', bookings=all_data)
+    return render_template_string(bookings_html, bookings=bookings)
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8000)
+if __name__ == '__main__':
+    app.run(debug=True)
