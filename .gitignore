@@ -1,5 +1,33 @@
-.env
+# Byte-compiled / cache files
 _pycache_/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
 venv/
+env/
+ENV/
+
+# Environment variable file (keep secrets local)
+.env
+
+# OS/system files
+.DS_Store
+Thumbs.db
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# Logs
 *.log
+
+# Ignore compiled files and packages
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Ignore SQLite or local DBs if used (optional)
+*.db
