@@ -20,16 +20,14 @@
             <th>Email</th>
             <th>Travel Date</th>
             <th>Seat Number</th>
-            <th>Price</th>
         </tr>
         {% for b in bookings %}
         <tr>
-            <td>{{ b[0] }}</td>
-            <td>{{ b[1] }}</td>
-            <td>{{ b[2] }}</td>
-            <td>{{ b[3] }}</td>
-            <td>{{ b[4] }}</td>
-            <td>{{ b[5] }}</td>
+            <td>{{ b['id'] }}</td>
+            <td>{{ b['name'] }}</td>
+            <td>{{ b['email'] }}</td>
+            <td>{{ b['travel_date'] }}</td>
+            <td>{{ b['seat'] }}</td>
         </tr>
         {% endfor %}
     </table>

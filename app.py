@@ -1,79 +1,8 @@
-from flask import Flask, render_template_string, request
+from flask import Flask, render_template, request, flash
 import sqlite3
 
 app = Flask(__name__)
-
-# HTML template (simple inline version for demonstration)
-form_html = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Bus Ticket Booking</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 30px; }
-        form { max-width: 400px; }
-        input, label { display: block; width: 100%; margin-bottom: 15px; }
-        input[type="submit"] {
-            background-color: green;
-            color: white;
-            padding: 10px;
-            border: none;
-            cursor: pointer;
-        }
-        a { color: blue; text-decoration: none; }
-        .message { color: red; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <h2>Book Your Ticket</h2>
-    {% if message %}
-        <p class="message">{{ message }}</p>
-    {% endif %}
-    <form method="POST" action="/book">
-        <label>Name:</label>
-        <input type="text" name="name" required>
-
-        <label>Email:</label>
-        <input type="email" name="email" required>
-
-        <label>Travel Date:</label>
-        <input type="date" name="travel_date" required>
-
-        <label>Seat Number:</label>
-        <input type="text" name="seat" required>
-
-        <input type="submit" value="Book Ticket">
-    </form>
-    <br>
-    <a href="/bookings">View All Bookings</a>
-</body>
-</html>
-"""
-
-bookings_html = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>All Bookings</title>
-</head>
-<body>
-    <h2>All Bookings</h2>
-    <table border="1" cellpadding="10">
-        <tr><th>Name</th><th>Email</th><th>Travel Date</th><th>Seat</th></tr>
-        {% for booking in bookings %}
-            <tr>
-                <td>{{ booking['name'] }}</td>
-                <td>{{ booking['email'] }}</td>
-                <td>{{ booking['travel_date'] }}</td>
-                <td>{{ booking['seat'] }}</td>
-            </tr>
-        {% endfor %}
-    </table>
-    <br>
-    <a href="/">Back to Booking</a>
-</body>
-</html>
-"""
+app.secret_key = "secret123"  # Use env variable in production
 
 # SQLite connection
 def get_db_connection():
@@ -81,7 +10,7 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-# Create the table on first run
+# Initialize DB
 def init_db():
     conn = get_db_connection()
     conn.execute('''
@@ -98,12 +27,10 @@ def init_db():
 
 init_db()
 
-# Home page
 @app.route('/')
 def home():
-    return render_template_string(form_html)
+    return render_template('index.html')
 
-# Booking handler
 @app.route('/book', methods=['POST'])
 def book():
     name = request.form['name']
@@ -117,16 +44,15 @@ def book():
     conn.commit()
     conn.close()
 
-    return render_template_string(form_html, message="Ticket booked successfully!")
+    flash("Ticket booked successfully!")
+    return render_template('index.html')
 
-# View all bookings
 @app.route('/bookings')
 def bookings():
     conn = get_db_connection()
     bookings = conn.execute('SELECT * FROM bookings').fetchall()
     conn.close()
-    return render_template_string(bookings_html, bookings=bookings)
+    return render_template('bookings.html', bookings=bookings)
 
-#  Updated to allow public access on port 8000
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)
